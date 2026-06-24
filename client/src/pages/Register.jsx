@@ -134,7 +134,7 @@ hover:shadow-[0_30px_80px_rgba(37,99,235,0.28)]
             ) : (
               <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="mb-7">
-                  <h2 className="text-2xl font-bold text-ink dark:text-white tracking-tight">Create your account</h2>
+                  <h2 className="text-2xl font-bold text-ink tracking-tight">Create your account</h2>
                   <p className="text-muted text-sm mt-1.5">Start tracking your job search journey today</p>
                 </div>
 
