@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { motion } from "framer-motion";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
@@ -13,6 +13,7 @@ import StatusBadge from "../components/StatusBadge";
 import CompanyLogo from "../components/CompanyLogo";
 import EmptyState from "../components/EmptyState";
 import { SkeletonCard, SkeletonChart, SkeletonRow } from "../components/Skeleton";
+import api from "../api";
 
 const STATUS_COLORS = { Applied: "#3b82f6", OA: "#8b5cf6", Interview: "#f97316", Offer: "#10b981", Rejected: "#f43f5e" };
 
@@ -26,8 +27,8 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, jobsRes] = await Promise.all([
-          axios.get("/api/jobs/stats"),
-          axios.get("/api/jobs"),
+          api.get("/api/jobs/stats"),
+          api.get("/api/jobs"),
         ]);
         setStats(statsRes.data);
         setJobs(jobsRes.data);
