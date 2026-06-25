@@ -57,7 +57,10 @@ export default function Register() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/auth/register", { name: form.name, email: form.email, password: form.password });
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+        { name: form.name, email: form.email, password: form.password }
+      );
       setSuccess(true);
       toast.success(`Account created! Welcome, ${data.name}!`);
       setTimeout(() => login(data), 900);

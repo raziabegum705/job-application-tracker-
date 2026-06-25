@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import { ArrowLeft } from "lucide-react";
 import JobForm from "../components/JobForm";
@@ -22,7 +22,7 @@ export default function AddJob() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post("/api/jobs", form);
+      await api.post("/api/jobs", form);
       toast.success("Application added successfully!");
       navigate("/jobs");
     } catch (err) {
