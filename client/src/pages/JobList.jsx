@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -70,7 +70,7 @@ export default function JobList() {
       const params = {};
       if (filter !== "All") params.status = filter;
       if (search) params.search = search;
-      const { data } = await axios.get("/api/jobs", { params });
+      const { data } = await api.get("/api/jobs", { params });
       setJobs(data);
     } catch {
       toast.error("Failed to load jobs");
@@ -106,7 +106,7 @@ export default function JobList() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this application? This can't be undone.")) return;
     try {
-      await axios.delete(`/api/jobs/${id}`);
+      await api.delete(`/api/jobs/${id}`);
       toast.success("Application deleted");
       setJobs(prev => prev.filter(j => j._id !== id));
     } catch {
