@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, CornerDownLeft, Briefcase, Plus, LayoutDashboard } from "lucide-react";
-import axios from "axios";
+import api from "../api";
 import CompanyLogo from "./CompanyLogo";
 
 export default function SpotlightSearch() {
@@ -27,7 +27,7 @@ export default function SpotlightSearch() {
   useEffect(() => {
     if (!open) return;
     const delay = setTimeout(() => {
-      axios.get("/api/jobs", { params: { search: query } })
+      api.get("/api/jobs", { params: { search: query } })
         .then(r => setJobs(r.data.slice(0, 6)))
         .catch(() => setJobs([]));
     }, 200);

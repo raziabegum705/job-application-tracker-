@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { ArrowLeft } from "lucide-react";
@@ -17,7 +17,7 @@ export default function EditJob() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await axios.get(`/api/jobs/${id}`);
+        const { data } = await api.get(`/api/jobs/${id}`);
         setOriginalStatus(data.status);
         setForm({
           company: data.company || "", role: data.role || "", location: data.location || "",
@@ -44,7 +44,7 @@ export default function EditJob() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`/api/jobs/${id}`, form);
+      await api.put(`/api/jobs/${id}`, form);
       const becameOffer = form.status === "Offer" && originalStatus !== "Offer";
       if (becameOffer) {
         toast.success("🎉 Congratulations on your Offer!");
