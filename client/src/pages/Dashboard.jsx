@@ -13,7 +13,7 @@ import StatusBadge from "../components/StatusBadge";
 import CompanyLogo from "../components/CompanyLogo";
 import EmptyState from "../components/EmptyState";
 import { SkeletonCard, SkeletonChart, SkeletonRow } from "../components/Skeleton";
-import api from "../api";
+
 
 const STATUS_COLORS = { Applied: "#3b82f6", OA: "#8b5cf6", Interview: "#f97316", Offer: "#10b981", Rejected: "#f43f5e" };
 
