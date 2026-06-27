@@ -6,7 +6,7 @@
 
 ## 🚀 Live Demo
 
-🌍 Live App: https://your-deployed-link.vercel.app
+🌍 Live App: https://job-application-tracker-beryl-two.vercel.app/
 
 🧪 Demo Login:
 Email: demo@gmail.com
