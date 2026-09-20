@@ -13,8 +13,13 @@ const jobSchema = new mongoose.Schema(
     interviewDate: { type: Date },
     notes: { type: String, trim: true },
     source: { type: String, enum: ["LinkedIn", "Naukri", "Company Website", "Referral", "Other"], default: "LinkedIn" },
+     statusHistory: [{ status: { type: String }, date: { type: Date, default: Date.now }, _id: false }],
+ 
   },
+
   { timestamps: true }
 );
+
+jobSchema.index({ user: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Job", jobSchema);

@@ -7,24 +7,59 @@ import confetti from "canvas-confetti";
 import { ArrowLeft } from "lucide-react";
 import JobForm from "../components/JobForm";
 
+const today = () => new Date().toISOString().split("T")[0];
+const fmt = (d) =>
+  d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "date not recorded";
+
+function StatusTimeline({ history }) {
+  return (
+    <div className="mb-6 rounded-xl border border-line dark:border-slate-800 p-4">
+      <p className="text-xs font-medium text-muted mb-3">Status timeline</p>
+      <ol className="space-y-3">
+        {history.map((h, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm">
+            <span className={`w-2.5 h-2.5 rounded-full ${i === history.length - 1 ? "bg-brand-600" : "bg-slate-400"}`} />
+            <span className="font-medium text-ink dark:text-slate-200">{h.status}</span>
+            <span className="text-muted">{fmt(h.date)}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export default function EditJob() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [originalStatus, setOriginalStatus] = useState(null);
+  const [originalDate, setOriginalDate] = useState(today());
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
       try {
         const { data } = await api.get(`/api/jobs/${id}`);
+        const hist =
+          data.statusHistory && data.statusHistory.length
+            ? data.statusHistory
+            : [
+                { status: "Applied", date: data.appliedDate },
+                ...(data.status !== "Applied" ? [{ status: data.status, date: data.updatedAt }] : []),
+              ];
+        const last = hist[hist.length - 1].date;
+        const lastDate = last ? last.split("T")[0] : today();
+        setHistory(hist);
         setOriginalStatus(data.status);
+        setOriginalDate(lastDate);
         setForm({
           company: data.company || "", role: data.role || "", location: data.location || "",
           status: data.status || "Applied", source: data.source || "LinkedIn",
           salary: data.salary || "", jobUrl: data.jobUrl || "", notes: data.notes || "",
           appliedDate: data.appliedDate ? data.appliedDate.split("T")[0] : "",
           interviewDate: data.interviewDate ? data.interviewDate.split("T")[0] : "",
+          statusDate: lastDate,
         });
       } catch {
         toast.error("Failed to load job details");
@@ -33,6 +68,13 @@ export default function EditJob() {
     };
     fetch();
   }, [id]);
+
+  const handleFormChange = (f) => {
+    if (f.status !== form.status) {
+      f = { ...f, statusDate: f.status === originalStatus ? originalDate : today() };
+    }
+    setForm(f);
+  };
 
   const fireConfetti = () => {
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.4 }, colors: ["#2563EB", "#10b981", "#f59e0b", "#8b5cf6"] });
@@ -75,7 +117,9 @@ export default function EditJob() {
         className="bg-white dark:bg-slate-900 rounded-2xl border border-line dark:border-slate-800 p-6 sm:p-8">
         <h1 className="text-xl font-bold text-ink dark:text-white mb-1">Edit Application</h1>
         <p className="text-sm text-muted mb-6">Update your application details or status</p>
-        <JobForm form={form} setForm={setForm} onSubmit={handleSubmit} loading={loading} btnText="Update Application" />
+        <StatusTimeline history={history} />
+        <JobForm form={form} setForm={handleFormChange} onSubmit={handleSubmit} loading={loading}
+          btnText="Update Application" showStatusDate />
       </motion.div>
     </div>
   );

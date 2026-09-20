@@ -1,3 +1,4 @@
+   import { useTheme } from "../context/ThemeContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
@@ -19,6 +20,20 @@ const STATUS_COLORS = { Applied: "#3b82f6", OA: "#8b5cf6", Interview: "#f97316",
 
 export default function Dashboard() {
   const { user } = useAuth();
+    const { theme } = useTheme();
+  const dark = theme === "dark";
+  const gridColor = dark ? "#334155" : "#E2E8F0";
+  const axisColor = dark ? "#94a3b8" : "#64748B";
+  const tooltipProps = {
+    contentStyle: {
+      background: dark ? "#0f172a" : "#ffffff",
+      border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
+      borderRadius: 12,
+      fontSize: 12,
+    },
+    labelStyle: { color: dark ? "#f1f5f9" : "#0f172a", fontWeight: 600 },
+    cursor: { fill: dark ? "rgba(148,163,184,0.12)" : "rgba(100,116,139,0.08)" },
+  };
   const [stats, setStats]   = useState(null);
   const [jobs, setJobs]     = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +41,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, jobsRes] = await Promise.all([
-          api.get("/api/jobs/stats"),
-          api.get("/api/jobs"),
-        ]);
+               const statsRes = await api.get("/api/jobs/stats");
         setStats(statsRes.data);
-        setJobs(jobsRes.data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -65,30 +76,9 @@ export default function Dashboard() {
     { name: "Offer",     value: stats.Offer || 0,    fill: "#10b981" },
   ] : [];
 
-  // Monthly applications — derived from jobs[]
-  const monthlyData = (() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
-      const label = d.toLocaleString("default", { month: "short" });
-      const count = jobs.filter(j => {
-        const jd = new Date(j.appliedDate || j.createdAt);
-        return jd.getMonth() === d.getMonth() && jd.getFullYear() === d.getFullYear();
-      }).length;
-      months.push({ month: label, applications: count });
-    }
-    return months;
-  })();
-
-  // Source breakdown
-  const sourceData = (() => {
-    const map = {};
-    jobs.forEach(j => { map[j.source || "Other"] = (map[j.source || "Other"] || 0) + 1; });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  })();
-
-  const recent = jobs.slice(0, 5);
-
+    const monthlyData = stats?.monthly || [];
+  const sourceData  = stats?.sources || [];
+  const recent      = stats?.recent || [];
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -131,7 +121,7 @@ export default function Dashboard() {
         <StatCard label="Rejected" value={stats?.Rejected || 0} icon={XCircle} accent="text-rose-600" />
       </div>
 
-      {jobs.length === 0 ? (
+      {(stats?.total || 0) === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-line dark:border-slate-800">
           <EmptyState
             title="No applications yet"
@@ -149,7 +139,7 @@ export default function Dashboard() {
               <p className="text-xs text-muted mb-4">Your progress through each stage</p>
               <ResponsiveContainer width="100%" height={240}>
                 <FunnelChart>
-                  <Tooltip />
+                  	<Tooltip {...tooltipProps} />
                   <Funnel dataKey="value" data={funnelData} isAnimationActive>
                     <LabelList position="right" dataKey="name" fill="#64748B" stroke="none" fontSize={12} />
                   </Funnel>
@@ -167,7 +157,7 @@ export default function Dashboard() {
                     <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
                       {pieData.map((d, i) => <Cell key={i} fill={STATUS_COLORS[d.name]} />)}
                     </Pie>
-                    <Tooltip />
+                    	<Tooltip {...tooltipProps} />
                     <Legend iconType="circle" />
                   </PieChart>
                 </ResponsiveContainer>
@@ -183,10 +173,10 @@ export default function Dashboard() {
               <p className="text-xs text-muted mb-4">Last 6 months</p>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  	<Tooltip {...tooltipProps} />
                   <Bar dataKey="applications" fill="#2563EB" radius={[6,6,0,0]} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
@@ -198,10 +188,10 @@ export default function Dashboard() {
               <p className="text-xs text-muted mb-4">Where you're applying from</p>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={sourceData} layout="vertical" margin={{ left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} width={90} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} width={90} />
+                  	<Tooltip {...tooltipProps} />
                   <Bar dataKey="value" fill="#8b5cf6" radius={[0,6,6,0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
@@ -222,8 +212,8 @@ export default function Dashboard() {
                   className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <CompanyLogo company={job.company} size={36} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-ink dark:text-slate-200 truncate">{job.role}</p>
-                    <p className="text-xs text-muted truncate">{job.company} · {job.location}</p>
+                    <p className="font-medium text-sm text-ink dark:text-slate-200 truncate">{job.company}</p>
+<p className="text-xs text-muted truncate">{[job.role, job.location].filter(Boolean).join(" · ")}</p>
                   </div>
                   <StatusBadge status={job.status} />
                 </motion.div>

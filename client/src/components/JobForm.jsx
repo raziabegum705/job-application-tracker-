@@ -17,7 +17,7 @@ function Field({ icon: Icon, label, children }) {
 
 const inputClass = "w-full border border-line dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 text-ink dark:text-slate-100 outline-none focus:border-brand-500 transition-colors placeholder:text-slate-400";
 
-export default function JobForm({ form, setForm, onSubmit, loading, btnText }) {
+export default function JobForm({ form, setForm, onSubmit, loading, btnText, showStatusDate })  {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   return (
@@ -62,9 +62,12 @@ export default function JobForm({ form, setForm, onSubmit, loading, btnText }) {
           <Field icon={Calendar} label="Applied Date">
             <input type="date" name="appliedDate" value={form.appliedDate} onChange={handleChange} className={inputClass} />
           </Field>
-          <Field icon={Calendar} label="Interview Date (optional)">
-            <input type="date" name="interviewDate" value={form.interviewDate} onChange={handleChange} className={inputClass} />
-          </Field>
+         
+                    {showStatusDate && form.status !== "Applied" && (
+            <Field icon={Calendar} label={`${form.status} date`}>
+              <input type="date" name="statusDate" value={form.statusDate || ""} onChange={handleChange} className={inputClass} />
+            </Field>
+          )}
         </div>
       </section>
 

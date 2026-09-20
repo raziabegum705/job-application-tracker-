@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-// Generates a deterministic color from a string (for fallback avatar)
 const colorFromString = (str = "") => {
   const colors = [
     "bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-orange-500",
@@ -11,10 +10,27 @@ const colorFromString = (str = "") => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-// Best-effort guess at a domain from a company name (for Clearbit logo lookup)
+// Companies whose website is not simply <name>.com
+const DOMAINS = {
+  hcl: "hcltech.com",
+  hcltech: "hcltech.com",
+  lti: "ltimindtree.com",
+  ltimindtree: "ltimindtree.com",
+  techm: "techmahindra.com",
+  meta: "meta.com",
+  facebook: "meta.com",
+  amazonwebservices: "aws.amazon.com",
+  aws: "aws.amazon.com",
+  tataconsultancyservices: "tcs.com",
+  tcs: "tcs.com",
+  samsung: "samsung.com",
+  sap: "sap.com",
+};
+
 const guessDomain = (company = "") => {
   const slug = company.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
-  return slug ? `${slug}.com` : null;
+  if (!slug) return null;
+  return DOMAINS[slug] || `${slug}.com`;
 };
 
 export default function CompanyLogo({ company, size = 40, className = "" }) {
@@ -36,10 +52,14 @@ export default function CompanyLogo({ company, size = 40, className = "" }) {
 
   return (
     <img
-      src={`https://logo.clearbit.com/${domain}`}
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
       alt={company + " logo"}
       onError={() => setErrored(true)}
-      className={`rounded-xl object-contain bg-white border border-line dark:border-slate-700 flex-shrink-0 ${className}`}
+      onLoad={(e) => {
+        // Google returns a tiny generic globe when a site has no icon
+        if (e.target.naturalWidth <= 16) setErrored(true);
+      }}
+      className={`rounded-xl object-contain bg-white border border-line dark:border-slate-700 p-1 flex-shrink-0 ${className}`}
       style={{ width: size, height: size }}
     />
   );

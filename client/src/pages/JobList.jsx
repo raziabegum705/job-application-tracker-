@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
 import toast from "react-hot-toast";
@@ -14,6 +14,11 @@ import { SkeletonRow } from "../components/Skeleton";
 
 const STATUSES = ["All", "Applied", "OA", "Interview", "Offer", "Rejected"];
 const PAGE_SIZE = 8;
+const lastStatusDate = (job) => {
+  const h = job.statusHistory;
+  if (!h || h.length < 2) return null;
+  return new Date(h[h.length - 1].date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+};
 
 function ActionMenu({ job, onDelete }) {
   const [open, setOpen] = useState(false);
@@ -57,6 +62,8 @@ function ActionMenu({ job, onDelete }) {
 
 export default function JobList() {
   const [jobs, setJobs]       = useState([]);
+  const [total, setTotal]     = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState("All");
   const [search, setSearch]   = useState("");
@@ -67,11 +74,13 @@ export default function JobList() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page, limit: PAGE_SIZE, sortBy: sortKey, sortDir };
       if (filter !== "All") params.status = filter;
       if (search) params.search = search;
       const { data } = await api.get("/api/jobs", { params });
-      setJobs(data);
+      setJobs(data.jobs);
+      setTotal(data.total);
+      setTotalPages(Math.max(1, data.pages));
     } catch {
       toast.error("Failed to load jobs");
     } finally {
@@ -79,36 +88,25 @@ export default function JobList() {
     }
   };
 
-  useEffect(() => { const t = setTimeout(fetchJobs, 300); return () => clearTimeout(t); }, [filter, search]);
+  useEffect(() => {
+    const t = setTimeout(fetchJobs, 300);
+    return () => clearTimeout(t);
+  }, [filter, search, page, sortKey, sortDir]);
   useEffect(() => { setPage(1); }, [filter, search]);
 
   const handleSort = (key) => {
+    setPage(1);
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
   };
-
-  const sorted = useMemo(() => {
-    const arr = [...jobs];
-    arr.sort((a, b) => {
-      let va = a[sortKey], vb = b[sortKey];
-      if (sortKey === "appliedDate" || sortKey === "createdAt") { va = new Date(va); vb = new Date(vb); }
-      else { va = (va || "").toString().toLowerCase(); vb = (vb || "").toString().toLowerCase(); }
-      if (va < vb) return sortDir === "asc" ? -1 : 1;
-      if (va > vb) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    return arr;
-  }, [jobs, sortKey, sortDir]);
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const paginated   = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this application? This can't be undone.")) return;
     try {
       await api.delete(`/api/jobs/${id}`);
       toast.success("Application deleted");
-      setJobs(prev => prev.filter(j => j._id !== id));
+      if (jobs.length === 1 && page > 1) setPage(p => p - 1);
+      else fetchJobs();
     } catch {
       toast.error("Delete failed");
     }
@@ -125,7 +123,7 @@ export default function JobList() {
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink dark:text-white tracking-tight">Applications</h1>
-          <p className="text-muted text-sm mt-1">{jobs.length} total application{jobs.length !== 1 ? "s" : ""}</p>
+          <p className="text-muted text-sm mt-1">{total} total application{total !== 1 ? "s" : ""}</p>
         </div>
         <Link to="/add" className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-glow transition-colors">
           <Plus size={16} /> Add Application
@@ -156,7 +154,7 @@ export default function JobList() {
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-line dark:border-slate-800 overflow-hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-        ) : sorted.length === 0 ? (
+        ) : jobs.length === 0 ? (
           <EmptyState
             icon={<Briefcase size={26} />}
             title="No applications found"
@@ -179,7 +177,7 @@ export default function JobList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line dark:divide-slate-800">
-                  {paginated.map((job) => (
+                  {jobs.map((job) => (
                     <motion.tr key={job._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="px-5 py-3.5">
@@ -190,7 +188,10 @@ export default function JobList() {
                       </td>
                       <td className="px-5 py-3.5 text-ink dark:text-slate-300">{job.role}</td>
                       <td className="px-5 py-3.5 text-muted">{job.location}</td>
-                      <td className="px-5 py-3.5"><StatusBadge status={job.status} /></td>
+                     <td className="px-5 py-3.5">
+  <StatusBadge status={job.status} />
+  {lastStatusDate(job) && <p className="text-[11px] text-muted mt-1">since {lastStatusDate(job)}</p>}
+</td>
                       <td className="px-5 py-3.5 text-muted">{new Date(job.appliedDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
                       <td className="px-5 py-3.5 text-right"><ActionMenu job={job} onDelete={handleDelete} /></td>
                     </motion.tr>
@@ -201,7 +202,7 @@ export default function JobList() {
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-line dark:divide-slate-800">
-              {paginated.map((job) => (
+              {jobs.map((job) => (
                 <motion.div key={job._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4">
                   <div className="flex items-start gap-3">
                     <CompanyLogo company={job.company} size={38} />
